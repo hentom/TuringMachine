@@ -24,17 +24,27 @@ public class TuringMachine {
         Tape tape = new Tape(tapeContent);
         State currentState = initialState;
         
-        while (!finalStates.contains(currentState)) {
-            currentState = executeSingleStep(tape, currentState);
+        // execute transitions as long as possible
+        for (
+        		Transition executableTransition = findExecutableTransition(tape, currentState);
+        		executableTransition != null;
+        		executableTransition = findExecutableTransition(tape, currentState)) {
+        	tape.executeTransition(executableTransition);
+        	currentState = executableTransition.getNewState();
+        }
+        
+        // check whether last state is a final state
+        if (!finalStates.contains(currentState)) {
+        	throw new RuntimeException("Turing machine is rejecting");
         }
         
         return tape.getContent();
     }
     
-    private State executeSingleStep(Tape tape, State state) {
-        char currentSymbol = tape.getCurrentSymbol();
+    private Transition findExecutableTransition(Tape tape, State state) {
+    	char currentSymbol = tape.getCurrentSymbol();
         Transition transition;
-        for (Iterator<Transition> it = transitionRelation.iterator();
+    	for (Iterator<Transition> it = transitionRelation.iterator();
                 it.hasNext();) {
             transition = it.next();
             if (!transition.getOldState().equals(state)) {
@@ -43,10 +53,9 @@ public class TuringMachine {
             if (transition.getOldSymbol() != currentSymbol) {
                 continue;
             }
-            tape.executeTransition(transition);
-            return transition.getNewState();
+            return transition;
         }
-        throw new RuntimeException("no possible transition found");
+    	return null;
     }
     
     private class Tape {
